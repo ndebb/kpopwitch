@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KPOP WITCH - AI Vending Machine</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .glass-effect { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); }
+        .character-card { transition: transform 0.3s ease, box-shadow 0.3s ease; }
+        .character-card.selected { transform: scale(1.05); box-shadow: 0 0 20px rgba(168, 85, 247, 0.8); }
+        .character-card:focus-visible { outline: 2px solid #a855f7; outline-offset: 2px; }
+        .neon-glow { box-shadow: 0 0 5px #a855f7, 0 0 10px #a855f7, 0 0 15px #a855f7; }
+        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1) grayscale(100%) brightness(50%); }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex items-center justify-center p-4">
+
+    <div class="w-full max-w-2xl mx-auto">
+        <header class="text-center mb-8">
+            <img src="YOUR_LOGO_URL.png" alt="KPOP WITCH Logo" class="w-24 h-24 mx-auto mb-4 rounded-full" onerror="this.style.display='none'">
+            <h1 class="text-4xl md:text-5xl font-bold tracking-tight text-purple-400">KPOP WITCH</h1>
+            <p class="text-lg text-gray-300 mt-2">AI Vending Machine</p>
+            <p class="text-sm text-gray-400 mt-1">마녀에게 질문하고 운명의 답을 들어보세요.</p>
+        </header>
+
+        <main id="main-content" class="glass-effect rounded-2xl p-6 md:p-8">
+            <!-- Step 1: Character Selection -->
+            <div id="step-1">
+                <h2 class="text-2xl font-semibold mb-4 text-center">1. 마녀를 선택하세요</h2>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    <!-- Character cards will be inserted here by JS -->
+                </div>
+            </div>
+
+            <!-- Step 2: Form Input -->
+            <div id="step-2" class="hidden">
+                <button type="button" id="back-to-step-1" class="mb-4 text-purple-400 hover:text-purple-300">&larr; 다시 선택하기</button>
+                <h2 class="text-2xl font-semibold mb-2 text-center">2. 정보를 입력하세요</h2>
+                <div class="flex items-center justify-center mb-4">
+                     <img id="selected-char-img" src="" alt="Selected Character" class="w-16 h-16 rounded-full border-2 border-purple-400">
+                     <p id="selected-char-name" class="ml-4 text-xl font-bold"></p>
+                </div>
+                
+                <div class="space-y-4">
+                    <textarea id="question-input" class="w-full h-24 bg-gray-800 border border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:outline-none placeholder-gray-500" placeholder="가장 궁금한 질문 하나를 입력하세요..."></textarea>
+                    
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-400 mb-2 text-center">운세 정보를 위해 꼭 필요해요</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <input id="birthdate-input" type="date" class="w-full bg-gray-800 border border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:outline-none">
+                            <select id="birthtime-input" class="w-full bg-gray-800 border border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:outline-none">
+                                <option value="">태어난 시 선택</option>
+                                <option value="자시">자시 (23:30 ~ 01:29)</option>
+                                <option value="축시">축시 (01:30 ~ 03:29)</option>
+                                <option value="인시">인시 (03:30 ~ 05:29)</option>
+                                <option value="묘시">묘시 (05:30 ~ 07:29)</option>
+                                <option value="진시">진시 (07:30 ~ 09:29)</option>
+                                <option value="사시">사시 (09:30 ~ 11:29)</option>
+                                <option value="오시">오시 (11:30 ~ 13:29)</option>
+                                <option value="미시">미시 (13:30 ~ 15:29)</option>
+                                <option value="신시">신시 (15:30 ~ 17:29)</option>
+                                <option value="유시">유시 (17:30 ~ 19:29)</option>
+                                <option value="술시">술시 (19:30 ~ 21:29)</option>
+                                <option value="해시">해시 (21:30 ~ 23:29)</option>
+                            </select>
+                        </div>
+                        <div class="mt-4 flex justify-center items-center space-x-6">
+                            <label class="flex items-center"><input type="radio" name="gender" value="male" class="mr-2 bg-gray-800">남성</label>
+                            <label class="flex items-center"><input type="radio" name="gender" value="female" class="mr-2 bg-gray-800">여성</label>
+                        </div>
+                    </div>
+                    <input id="email-input" type="email" class="w-full bg-gray-800 border border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:outline-none placeholder-gray-500" placeholder="답변 받을 이메일 주소를 입력하세요">
+                </div>
+                
+                <p id="error-message" class="text-red-400 text-center mt-4 h-5"></p>
+
+                <button type="button" id="payment-button" class="w-full mt-2 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg text-lg transition-transform transform hover:scale-105 neon-glow disabled:opacity-50 disabled:cursor-not-allowed">
+                    $1.00 결제하고 질문하기
+                </button>
+                 <p class="text-xs text-gray-500 mt-2 text-center">버튼 클릭 시 Stripe 결제 페이지로 이동합니다.</p>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // --- START OF CONFIGURATION ---
+        const stripePaymentLink = "https://buy.stripe.com/7sYfZg0Lh4R4fyDgyM0gw00";
+        const characters = [
+            { id: 'namo', name: '나모 (Namo)', img: 'REPLACE_WITH_NAMO_IMAGE_URL.png' },
+            { id: 'kiff', name: '키프 (Kiff)', img: 'REPLACE_WITH_KIFF_IMAGE_URL.png' },
+            { id: 'kylaa', name: '카일라 (Kylaa)', img: 'REPLACE_WITH_KYLAA_IMAGE_URL.png' },
+            { id: 'saturn', name: '새턴 (Saturn)', img: 'REPLACE_WITH_SATURN_IMAGE_URL.png' },
+            { id: 'mio', name: '미오 (Mio)', img: 'REPLACE_WITH_MIO_IMAGE_URL.png' },
+            { id: 'ruel', name: '루엘 (Ruel)', img: 'REPLACE_WITH_RUEL_IMAGE_URL.png' },
+        ];
+        // --- END OF CONFIGURATION ---
+
+        const step1 = document.getElementById('step-1');
+        const step2 = document.getElementById('step-2');
+        const characterGrid = step1.querySelector('.grid');
+        const backButton = document.getElementById('back-to-step-1');
+        const paymentButton = document.getElementById('payment-button');
+        const errorMessage = document.getElementById('error-message');
+        let selectedCharacter = null;
+
+        function renderCharacters() {
+            characterGrid.innerHTML = '';
+            characters.forEach(char => {
+                const card = document.createElement('button');
+                card.type = 'button';
+                card.className = 'character-card cursor-pointer p-4 rounded-lg text-center glass-effect w-full';
+                card.dataset.charId = char.id;
+
+                const img = document.createElement('img');
+                img.alt = char.name;
+                img.className = 'w-24 h-24 rounded-full mx-auto mb-2 border-2 border-transparent';
+                
+                img.addEventListener('error', () => {
+                    img.src = `https://placehold.co/200x200/1a1a1a/a855f7?text=${encodeURIComponent(char.name.split(' ')[0])}`;
+                });
+                img.src = char.img;
+
+                const label = document.createElement('p');
+                label.className = 'font-semibold';
+                label.textContent = char.name;
+
+                card.appendChild(img);
+                card.appendChild(label);
+                card.addEventListener('click', () => selectCharacter(char, card));
+                characterGrid.appendChild(card);
+            });
+        }
+
+        function selectCharacter(char, cardElement) {
+            selectedCharacter = char;
+            document.querySelectorAll('.character-card').forEach(c => c.classList.remove('selected'));
+            cardElement.classList.add('selected');
+
+            const imgEl = document.getElementById('selected-char-img');
+            const fallback = () => {
+                imgEl.src = `https://placehold.co/200x200/1a1a1a/a855f7?text=${encodeURIComponent(char.name.split(' ')[0])}`;
+            };
+            
+            imgEl.removeEventListener('error', fallback); 
+            imgEl.addEventListener('error', fallback, { once: true });
+            imgEl.src = char.img;
+
+            document.getElementById('selected-char-name').textContent = char.name;
+            step1.classList.add('hidden');
+            step2.classList.remove('hidden');
+        }
+
+        backButton.addEventListener('click', () => {
+            step2.classList.add('hidden');
+            step1.classList.remove('hidden');
+            selectedCharacter = null;
+            errorMessage.textContent = '';
+            document.querySelectorAll('.character-card').forEach(c => c.classList.remove('selected'));
+            paymentButton.disabled = false;
+            paymentButton.textContent = '$1.00 결제하고 질문하기';
+        });
+
+        paymentButton.addEventListener('click', (event) => {
+            event.preventDefault();
+
+            try {
+                errorMessage.textContent = '';
+                if (!selectedCharacter) { errorMessage.textContent = '마녀를 먼저 선택해주세요.'; return; }
+
+                const question = document.getElementById('question-input').value.trim();
+                const email = document.getElementById('email-input').value.trim();
+                const birthdate = document.getElementById('birthdate-input').value;
+                const birthtime = document.getElementById('birthtime-input').value;
+                const gender = document.querySelector('input[name="gender"]:checked');
+
+                if (!question) { errorMessage.textContent = "질문을 입력해주세요."; return; }
+                if (!birthdate) { errorMessage.textContent = "생년월일을 입력해주세요."; return; }
+                if (!birthtime) { errorMessage.textContent = "태어난 시를 선택해주세요."; return; }
+                if (!gender) { errorMessage.textContent = "성별을 선택해주세요."; return; }
+                if (!email || !/^\S+@\S+\.\S+$/.test(email)) { errorMessage.textContent = "유효한 이메일 주소를 입력해주세요."; return; }
+                if (!stripePaymentLink.startsWith('https://buy.stripe.com/')) {
+                    errorMessage.textContent = "Stripe 결제 링크가 올바르지 않습니다."; return;
+                }
+
+                const submissionData = {
+                    character: selectedCharacter.name,
+                    email, birthdate, birthtime, gender: gender.value,
+                    question, timestamp: new Date().toISOString()
+                };
+                
+                // THE FIX: Using sessionStorage to ensure data persists across redirects.
+                sessionStorage.setItem('kpopWitchSubmission', JSON.stringify(submissionData));
+
+                paymentButton.disabled = true;
+                paymentButton.textContent = '결제 페이지로 이동 중...';
+                
+                window.location.href = stripePaymentLink;
+
+            } catch (e) {
+                console.error("An error occurred:", e);
+                errorMessage.textContent = "오류가 발생했습니다. 콘솔을 확인해주세요.";
+                paymentButton.disabled = false;
+                paymentButton.textContent = '$1.00 결제하고 질문하기';
+            }
+        });
+
+        // Initial render
+        renderCharacters();
+    </script>
+</body>
+</html>
