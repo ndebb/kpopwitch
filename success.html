@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KPOP WITCH - Your Destiny Answer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .glass-effect { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.2);
+            border-left-color: #a855f7; /* purple-500 */
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        #gemini-response { white-space: pre-wrap; }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex items-center justify-center p-4">
+
+    <div class="w-full max-w-2xl mx-auto">
+        <main id="main-content" class="glass-effect rounded-2xl p-6 md:p-8 text-center">
+            
+            <!-- Loading State -->
+            <div id="loading-state">
+                <div class="spinner mx-auto"></div>
+                <h1 class="text-2xl font-bold text-purple-400 mt-6">마녀들이 당신의 운명을 엿보고 있습니다...</h1>
+                <p class="text-lg text-gray-300 mt-2">잠시만 기다려주세요. 별들의 속삭임을 듣는 중이에요.</p>
+            </div>
+
+            <!-- Success State -->
+            <div id="success-state" class="hidden">
+                <h1 class="text-3xl md:text-4xl font-bold text-purple-400">✨ 마녀의 답변이 도착했습니다!</h1>
+                <div id="response-card" class="mt-6 text-left bg-gray-800 p-6 rounded-lg border border-purple-800">
+                    <p id="gemini-response" class="text-gray-200 leading-relaxed"></p>
+                </div>
+                <div class="mt-6 flex flex-col sm:flex-row gap-4 justify-center">
+                    <button id="copy-button" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg transition-transform transform hover:scale-105">
+                        답변 복사하기
+                    </button>
+                    <a href="index.html" class="border border-purple-500 hover:bg-purple-500/20 text-purple-300 font-bold py-3 px-6 rounded-lg">
+                        다른 질문하기
+                    </a>
+                </div>
+                <p id="copy-message" class="text-green-400 mt-4 h-5"></p>
+            </div>
+
+            <!-- Error State -->
+            <div id="error-state" class="hidden">
+                 <h1 class="text-3xl font-bold text-red-400">오류가 발생했습니다</h1>
+                 <p class="text-lg text-gray-300 mt-4">마녀와의 연결이 불안정합니다. 잠시 후 다시 시도해주세요.</p>
+                 <p id="error-details" class="text-sm text-gray-500 mt-2"></p>
+                 <a href="index.html" class="mt-8 inline-block bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg">
+                    돌아가기
+                </a>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        // This script runs when the success page loads.
+        window.onload = function() {
+            // THE FIX: Using sessionStorage to ensure data persists across redirects.
+            const submissionDataString = sessionStorage.getItem('kpopWitchSubmission');
+            if (submissionDataString) {
+                const submissionData = JSON.parse(submissionDataString);
+                console.log('--- SUCCESSFUL PAYMENT & SUBMISSION ---');
+                console.log(submissionData);
+                
+                // Call Gemini API with the user's data
+                callGemini(submissionData);
+                
+                // Clear the data from storage after using it
+                sessionStorage.removeItem('kpopWitchSubmission');
+            } else {
+                console.log('No submission data found in sessionStorage.');
+                showErrorState('세션 데이터를 찾을 수 없습니다. 직접 페이지에 방문하셨나요?');
+            }
+        };
+
+        function getCharacterPersona(characterName) {
+            const personas = {
+                '나모 (Namo)': '미래를 예지하는 능력을 가진, 젊은 외모와 달리 친근한 \'할머니\' 같은 매력의 마녀. 자신감 넘치는 말투를 사용합니다.',
+                '키프 (Kiff)': '음악을 만드는 엘리트 천재지만 허당미가 있는 마녀. 똑똑하지만 가끔 엉뚱한 영어를 구사하며, 츤데레 성격입니다.',
+                '카일라 (Kylaa)': 'K-POP을 사랑하는 댄스 마녀. 뛰어난 비주얼을 가졌고, K-Culture에 대한 환상을 가지고 있습니다.',
+                '새턴 (Saturn)': '보이시한 매력의 리드 래퍼 마녀. 강한 외면 뒤에 가난한 가족을 구하려는 따뜻한 마음을 가졌습니다.',
+                '미오 (Mio)': '여우족 혼혈인 메인 보컬 마녀. 제멋대로이고 까칠해 보이지만, 사실은 가장 애교가 많은 반전 매력을 가졌습니다.',
+                '루엘 (Ruel)': '엘프족 혼혈인 댄스 마녀. 화끈하고 직설적인 성격을 가졌으며, 신비로운 분위기를 풍깁니다.'
+            };
+            return personas[characterName] || 'KPOP WITCH의 멤버인 마녀';
+        }
+
+        async function callGemini(data, retries = 3, delay = 1000) {
+            const apiKey = ""; // Leave empty
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+            const persona = getCharacterPersona(data.character);
+            const prompt = `
+                당신은 AI K-POP 아이돌 그룹 "KPOP WITCH"의 멤버인 "${data.character}"입니다. 당신의 페르소나는 다음과 같습니다: "${persona}".
+                이 페르소나에 완전히 몰입해서, 사용자의 질문에 답변해주세요. 친근하면서도 신비로운 마녀의 말투를 사용해야 합니다. 답변은 2~3개의 문단으로 구성해주세요.
+
+                사용자 정보:
+                - 생년월일: ${data.birthdate}
+                - 태어난 시: ${data.birthtime}
+                - 성별: ${data.gender === 'male' ? '남성' : '여성'}
+
+                사용자의 질문: "${data.question}"
+
+                이제, ${data.character}가 되어 답변을 시작해주세요.
+            `;
+
+            console.log("Generated Prompt:", prompt);
+
+            const payload = {
+                contents: [{
+                    role: "user",
+                    parts: [{ text: prompt }]
+                }],
+                generationConfig: {
+                    temperature: 0.7,
+                    topP: 0.95,
+                    maxOutputTokens: 512,
+                }
+            };
+            
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                
+                if (result.candidates && result.candidates.length > 0 && result.candidates[0].content.parts[0].text) {
+                    const generatedText = result.candidates[0].content.parts[0].text;
+                    showSuccessState(generatedText);
+                } else {
+                    console.error("Unexpected API response structure:", result);
+                    throw new Error("API가 유효한 답변을 생성하지 못했습니다.");
+                }
+
+            } catch (error) {
+                console.error("Error calling Gemini API:", error);
+                if (retries > 0) {
+                    console.log(`Retrying... (${retries} attempts left)`);
+                    await new Promise(res => setTimeout(res, delay));
+                    callGemini(data, retries - 1, delay * 2); // Exponential backoff
+                } else {
+                    showErrorState(error.message);
+                }
+            }
+        }
+
+        function showLoadingState() {
+            document.getElementById('loading-state').classList.remove('hidden');
+            document.getElementById('success-state').classList.add('hidden');
+            document.getElementById('error-state').classList.add('hidden');
+        }
+
+        function showSuccessState(text) {
+            document.getElementById('gemini-response').textContent = text;
+            document.getElementById('loading-state').classList.add('hidden');
+            document.getElementById('success-state').classList.remove('hidden');
+            document.getElementById('error-state').classList.add('hidden');
+        }
+
+        function showErrorState(details) {
+            document.getElementById('error-details').textContent = details;
+            document.getElementById('loading-state').classList.add('hidden');
+            document.getElementById('success-state').classList.add('hidden');
+            document.getElementById('error-state').classList.remove('hidden');
+        }
+
+        // Clipboard functionality
+        const copyButton = document.getElementById('copy-button');
+        const copyMessage = document.getElementById('copy-message');
+        copyButton.addEventListener('click', () => {
+            const textToCopy = document.getElementById('gemini-response').textContent;
+            
+            const textArea = document.createElement('textarea');
+            textArea.value = textToCopy;
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                copyMessage.textContent = '답변이 복사되었습니다!';
+                setTimeout(() => { copyMessage.textContent = ''; }, 2000);
+            } catch (err) {
+                console.error('Failed to copy text: ', err);
+                copyMessage.textContent = '복사에 실패했습니다.';
+            }
+            document.body.removeChild(textArea);
+        });
+
+    </script>
+</body>
+</html>
